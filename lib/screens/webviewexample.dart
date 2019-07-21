@@ -72,6 +72,7 @@ class _WebViewExampleState extends State<WebViewExample> {
             AsyncSnapshot<WebViewController> controller) {
           if (controller.hasData) {
             return FloatingActionButton(
+              tooltip: 'Aramanı favorilerine kaydet!',
               onPressed: () async {
                 final String url = await controller.data.currentUrl();
                 _favorites.add(url);
