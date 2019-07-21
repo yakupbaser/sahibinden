@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:sahibindenn/screens/menu.dart';
-import 'package:sahibindenn/works/gethtmlsource.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class WebViewExample extends StatefulWidget {
@@ -13,7 +12,6 @@ class _WebViewExampleState extends State<WebViewExample> {
   final Set<String> _favorites = Set<String>();
   final Completer<WebViewController> _controller =
       Completer<WebViewController>();
-  bool _visible = false;    
 
   @override
   Widget build(BuildContext context) {
@@ -40,14 +38,16 @@ class _WebViewExampleState extends State<WebViewExample> {
           javascriptChannels: <JavascriptChannel>[
             _toasterJavascriptChannel(context),
           ].toSet(),
-
-          onPageFinished: (String url) async{
+          navigationDelegate: (NavigationRequest request) {
+            if (request.url.startsWith('https://www.youtube.com/')) {
+              print('blocking navigation to $request}');
+              return NavigationDecision.prevent;
+            }
+            print('allowing navigation to $request');
+            return NavigationDecision.navigate;
+          },
+          onPageFinished: (String url) {
             print('Page finished loading: $url');
-
-            
-            
-             _manageFavoriteButtonTheme(url); 
-            
           },
         );
       }),
@@ -66,44 +66,23 @@ class _WebViewExampleState extends State<WebViewExample> {
   }
 
   Widget favoriteButton() {
-    
     return FutureBuilder<WebViewController>(
         future: _controller.future,
         builder: (BuildContext context,
             AsyncSnapshot<WebViewController> controller) {
           if (controller.hasData) {
-            return Visibility(
-                visible: _visible,
-                child: FloatingActionButton(
-                  onPressed: () async {
-                    final String url = await controller.data.currentUrl();
-                    _favorites.add(url);
-                    Scaffold.of(context).showSnackBar(
-                      SnackBar(content: Text('Favorilere eklendi $url')),
-                    );
-                  },
-                  child: const Icon(Icons.favorite),
-                ));
+            return FloatingActionButton(
+              onPressed: () async {
+                final String url = await controller.data.currentUrl();
+                _favorites.add(url);
+                Scaffold.of(context).showSnackBar(
+                  SnackBar(content: Text('Favorited $url')),
+                );
+              },
+              child: const Icon(Icons.favorite),
+            );
           }
-          ;
-
           return Container();
         });
-  }
-
-  _manageFavoriteButtonTheme(String url) async {
-    String htmlSource = '';
-    bool newVisible = false;
-    htmlSource = await getHtmlFromUrl(url);
-    if (htmlSource.contains('Aramayı Favorilere Kaydet') == true && url.endsWith('#/') == true) {
-      debugPrint('Buton var');
-      newVisible = true;
-    } else {
-      debugPrint('Buton yok');
-      newVisible = false;
-    }
-    setState(() {
-      _visible = newVisible;
-    });
   }
 }
